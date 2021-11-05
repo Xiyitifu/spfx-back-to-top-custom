@@ -29,26 +29,25 @@ export default class SpfxBackToTopApplicationCustomizer extends BaseApplicationC
   }
 
   private _renderControls = (delay: number) => {
-    // The event is getting called before the page navigation happens
-    // Due to this, the onScroll event that we are adding (for BackToTop)
-    // is getting reset when the partial page load is finished
-    // There is an open issue regarding this - https://github.com/SharePoint/sp-dev-docs/issues/5321
-    // So, I have added a 3 seconds delay for the child components to load.
-    // This is a temporary fix untill the actual issue in SPFx is resolved.
-    setTimeout(() => {
-      if (this.topPlaceholder) {
-        if (this.topPlaceholder.domElement) {
-          console.log("back to top")
+    var checkExist = setInterval(function () {
+      let scrollContainer = document.querySelector(
+        '[data-automation-id="contentScrollRegion"]'
+      );
+
+      if (scrollContainer) {
+        if (this.topPlaceholder && this.topPlaceholder.domElement) {
           const element: React.ReactElement<IBackToTopProps> =
             React.createElement(BackToTop, {
-              webUrl: this.context.pageContext.web.absoluteUrl,
+              currentUrl: window.location.href,
+              scrollContainer,
             });
           ReactDOM.render(element, this.topPlaceholder.domElement);
+        } else {
+          this.renderPlaceHolders();
         }
-      } else {
-        this.renderPlaceHolders();
+        clearInterval(checkExist);
       }
-    }, delay);
+    }, 100);
   };
 
   @override
