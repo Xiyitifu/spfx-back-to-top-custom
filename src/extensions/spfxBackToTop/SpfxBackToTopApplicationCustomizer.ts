@@ -1,17 +1,13 @@
-import * as React from "react";
-import * as ReactDOM from "react-dom";
-
 import { override } from "@microsoft/decorators";
 import {
   BaseApplicationCustomizer,
   PlaceholderContent,
   PlaceholderName,
 } from "@microsoft/sp-application-base";
-import IBackToTopProps from "./BackToTop/IBackToTopProps";
-
-import * as strings from "SpfxBackToTopApplicationCustomizerStrings";
-import BackToTop from "./BackToTop/BackToTop";
 import { SPEventArgs } from "@microsoft/sp-core-library";
+import * as React from "react";
+import * as ReactDOM from "react-dom";
+import { BackToTop } from "./BackToTop/BackToTop";
 
 export interface ISpfxBackToTopApplicationCustomizerProperties {}
 
@@ -24,31 +20,38 @@ export default class SpfxBackToTopApplicationCustomizer extends BaseApplicationC
       this.topPlaceholder = this.context.placeholderProvider.tryCreateContent(
         PlaceholderName.Top
       );
-      this._renderControls(0);
+      this._renderControls();
     }
   }
 
-  private _renderControls = (delay: number) => {
-    // The event is getting called before the page navigation happens
-    // Due to this, the onScroll event that we are adding (for BackToTop)
-    // is getting reset when the partial page load is finished
-    // There is an open issue regarding this - https://github.com/SharePoint/sp-dev-docs/issues/5321
-    // So, I have added a 3 seconds delay for the child components to load.
-    // This is a temporary fix untill the actual issue in SPFx is resolved.
-    setTimeout(() => {
-      if (this.topPlaceholder) {
-        if (this.topPlaceholder.domElement) {
-          console.log("back to top")
-          const element: React.ReactElement<IBackToTopProps> =
-            React.createElement(BackToTop, {
-              webUrl: this.context.pageContext.web.absoluteUrl,
+  private _renderControls = () => {
+    let retry = 0;
+    var checkExist = setInterval(() => {
+      let scrollContainer = document.querySelector(
+        '[data-automation-id="contentScrollRegion"]'
+      );
+
+      if (scrollContainer) {
+        if (this.topPlaceholder) {
+          if (this.topPlaceholder.domElement) {
+            const element = React.createElement(BackToTop, {
+              currentUrl: window.location.href,
+              scrollContainer,
+              context: this.context,
             });
-          ReactDOM.render(element, this.topPlaceholder.domElement);
+            ReactDOM.render(element, this.topPlaceholder.domElement);
+          }
+        } else {
+          this.renderPlaceHolders();
+          retry++;
         }
+        clearInterval(checkExist);
       } else {
-        this.renderPlaceHolders();
+        if (retry > 10) {
+          clearInterval(checkExist);
+        }
       }
-    }, delay);
+    }, 100);
   };
 
   @override
@@ -61,7 +64,7 @@ export default class SpfxBackToTopApplicationCustomizer extends BaseApplicationC
   }
 
   private navigatedEventHandler(args: SPEventArgs): void {
-    this._renderControls(3000);
+    this._renderControls();
   }
 
   @override

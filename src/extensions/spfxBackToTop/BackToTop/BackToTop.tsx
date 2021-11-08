@@ -1,67 +1,50 @@
+import { Icon, IconButton } from "office-ui-fabric-react";
 import * as React from "react";
+import * as ReactDOM from "react-dom";
 import styles from "./BackToTop.module.scss";
-import { IconButton, Icon } from "office-ui-fabric-react";
-import IBackToTopProps from  "./IBackToTopProps";
-import IBackToTopState from "./IBackToTopState";
+import IBackToTopProps from "./IBackToTopProps";
 
-export default class BackToTop extends React.Component<
-  IBackToTopProps,
-  IBackToTopState
-> {
-  private _scrollElement;
+export const BackToTop = ({ currentUrl }: IBackToTopProps) => {
+  const [showButton, setShowButton] = React.useState(false);
+  let scrollContainer = document.querySelector(
+    '[data-automation-id="contentScrollRegion"]'
+  );
 
-  constructor(props) {
-    super(props);
-    this._scrollElement = document.querySelector('[data-automation-id="contentScrollRegion"]');
-    this.state = {
-      showButton: false,
-    };
-
-    // Register the onscroll even handler
-    if (this._scrollElement) {
-      this._scrollElement.onscroll = this._onScroll;
+  const onScroll = () => {
+    if (scrollContainer && scrollContainer.scrollTop > 300) {
+      setShowButton(true);
+    } else {
+      setShowButton(false);
     }
-  }
-
-  private _onScroll = () => {
-    this.setState({
-      showButton:
-        this._scrollElement.scrollTop > 20
-    });
   };
 
-  private _goToTop = () => {
-    this._scrollElement.scrollTop = 0;
+  const goToTop = () => {
+    scrollContainer.scrollTop = 0;
     setTimeout(() => {
-      this._scrollElement.scrollTop = 0; // first scroll doesn't go to the very top. 
+      scrollContainer.scrollTop = 0; // first scroll doesn't go to the very top.
     }, 50);
   };
 
-  public render(): JSX.Element {
-    return (
-      <React.Fragment>
-        {this.state.showButton && (
-          <div className={styles.backToTop}>
-            <IconButton className={styles.iconButton} onClick={this._goToTop} ariaLabel="Back to Top">
-              <Icon iconName="Up" className={styles.icon}></Icon>
-            </IconButton>
-          </div>
-        )}
-      </React.Fragment>
-    );
-  }
+  React.useEffect(() => {
+    let domNode = ReactDOM.findDOMNode(scrollContainer);
+    domNode.addEventListener("scroll", onScroll);
+    onScroll();
+    return () => domNode.removeEventListener("scroll", onScroll);
+  }, [currentUrl]);
 
-  public componentWillReceiveProps(nextProps: IBackToTopProps) {
-    if (this.props.currentUrl != nextProps.currentUrl) {
-      this._scrollElement = undefined;
-      if (!this._scrollElement) {
-        this._scrollElement = document.body;
-      }
-      // Register the onscroll even handler
-      if (this._scrollElement) {
-        this._scrollElement.onscroll = this._onScroll;
-      }
-      this._onScroll();
-    }
-  }
-}
+  return (
+    <React.Fragment>
+      {showButton && (
+        <div className={styles.backToTop}>
+          <IconButton
+            className={styles.iconButton}
+            onClick={goToTop}
+            ariaLabel="Back to Top"
+          >
+            <Icon iconName="Up" className={styles.icon}></Icon>
+          </IconButton>
+        </div>
+      )}
+    </React.Fragment>
+  );
+};
