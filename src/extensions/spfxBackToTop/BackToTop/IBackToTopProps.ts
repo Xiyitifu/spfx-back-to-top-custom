@@ -1,4 +1,5 @@
 export default interface IBackToTopProps {
   currentUrl: string;
-  scrollContainer: HTMLDivElement;
+  scrollContainer: Element;
+  context: any;
 }
