@@ -26,7 +26,10 @@ export const BackToTop = ({ currentUrl }: IBackToTopProps) => {
   };
 
   React.useEffect(() => {
-    ReactDOM.findDOMNode(scrollContainer).addEventListener("scroll", onScroll);
+    let domNode = ReactDOM.findDOMNode(scrollContainer);
+    domNode.addEventListener("scroll", onScroll);
+    onScroll();
+    return () => domNode.removeEventListener("scroll", onScroll);
   }, [currentUrl]);
 
   return (
